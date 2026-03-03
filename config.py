@@ -9,25 +9,19 @@ METADATA_FIELDS = [
     "Start time", "End time", "Weather", 
     "Wind (knots)", "Recent weather", 
     "Tide", "Flow", "Recent events", "Total weight (lb)",
-    "# of participants", "Unusual items", "Notes/comments", "Outlier"
+    "# of participants", "Unusual items", "Notes/comments"
 ]
 
 DEBRIS_GROUPS = {
     "Plastic": [
         "Plastic drink bottles", "Food wrappers", "Plastic grocery bags", 
         "Plastic bags (Zip-loc, etc)", "Straws/stirrers", "Utensils", 
-        "Plastic cups/plates", "Plastic take away containers", "Plastic bottle caps", 
-        "Plastic lids", "Cigarettes", "Vaping cartidges/pods", "Cigar tips", 
+        "Plastic cups/plates", "Plastic lids", "Plastic take away containers", "Plastic bottle caps", 
+        "Cigarettes", "Vaping cartidges/pods", "Cigar tips", 
         "Personal hygiene", "Dental/floss picks", "Tampons/applicators", "Wipes", # Added these
         "Toys", "Balloons", "Lighters", "Shotgun shells/wadding", 
         "Strapping bands", "Zip-ties", "Shipping/packaging", 
         "Plastic sheeting/tape", "Oil/lube bottles", "Bleach/cleaner bottles"
-    ],
-    "Foam": [
-        "Foam cups/plates", "Foam take away containers", "Micro foam 0-5mm", 
-        "SMALL foam 5-30mm", "LARGE foam >30mm", "Dock Foam (any size)", "Foam Toys",
-        "Foam Toys (water/pool)", "Foam Shipping/packaging", "Foam Buoys", "Foam Coolers",
-        "Pink Construction Foam", "Blue Construction Foam", "Construction Foam w Foil",	"Foam Meat Trays"
     ],
     "PPE": [
         "Masks (reusable/fabric)", "Masks (disposable)", 
@@ -53,6 +47,12 @@ DEBRIS_GROUPS = {
         "Line/net fiber: MICRO 0-5mm", "Line/net fiber: SMALL 5-30mm", 
         "Line/net fiber: LARGE >30mm", "Resin Pellets", "BBs/beads"
     ],
+    "Foam": [
+        "Foam cups/plates", "Foam take away containers", "Micro foam 0-5mm", 
+        "SMALL foam 5-30mm", "LARGE foam >30mm", "Dock Foam (any size)", "Foam Toys",
+        "Foam Toys (water/pool)", "Foam Shipping/packaging", "Foam Buoys", "Foam Coolers",
+        "Pink Construction Foam", "Blue Construction Foam", "Construction Foam w Foil",	"Foam Meat Trays"
+    ],
     "Other": [
         "Home & garden items", "Car/boat parts", "Other", "Unidentified pieces"
     ]
@@ -61,8 +61,9 @@ DEBRIS_GROUPS = {
 SUMMARY_TOTALS = [
     "Total Plastic", "Total Foam", "Total PPE", "Total Metal", 
     "Total Glass & Rubber", "Total Paper & Cloth", 
-    "Total Fishing Debris", "Total Microplastics", "Grand Total"
+    "Total Fishing Debris", "Total Microplastics", "Grand Total", "Outlier"
 ]
+
 
 DROPDOWN_OPTIONS = {
     "State": ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "Can", "Other"],

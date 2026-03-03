@@ -75,115 +75,173 @@ else:
 # --- SECTION 1: NEW ENTRY ---
     if page == "New Entry":
         st.title("DATA ENTRY FORM")
-        with st.form("entry_form", clear_on_submit=True):
-            st.subheader("METADATA")
-            meta_in = {}
-            cols = st.columns(3)
 
-            # Define which fields are mandatory
+        # 1. This CSS hides the "Press Enter to submit" help text 
+        st.markdown(
+            """
+            <style>
+            div[data-testid="InputInstructions"] {
+                display: none;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # This CSS/JS snippet prevents 'Enter' from submitting the form
+        st.components.v1.html(
+            """
+            <script>
+            const doc = window.parent.document;
+            doc.addEventListener('keydown', function(e) {
+                if (e.keyCode === 13 && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+            </script>
+            """,
+            height=0,
+        )
+
+
+        
+        # We use clear_on_submit=False so data isn't wiped if there is a validation error
+        with st.form("entry_form", clear_on_submit=False):
+            # 1. METADATA SECTION
+            st.subheader("1. CLEANUP DETAILS")
+            meta_in = {}
+            m_cols = st.columns(3)
             REQUIRED_FIELDS = ["Date", "Location", "City", "State"]
 
             for i, field in enumerate(METADATA_FIELDS):
-                if field == "Outlier": continue 
-                
-                c = cols[i % 3]
-                
-                # Create the label: Uppercase it and add a red star if required
+                c = m_cols[i % 3]
                 display_label = field.upper().replace("#", "NUMBER")
                 if field in REQUIRED_FIELDS:
                     display_label = f"{display_label} :red[*]"
 
+                # Logic: We use 'key' to tie these to session state so they persist
+                f_key = f"meta_{field}"
+
                 if field in DROPDOWN_OPTIONS:
-                    meta_in[field] = c.selectbox(display_label, options=DROPDOWN_OPTIONS[field], index=None)
-                
+                    meta_in[field] = c.selectbox(display_label, options=DROPDOWN_OPTIONS[field], index=None, key=f_key)
                 elif "Date" in field:
-                    meta_in[field] = c.date_input(display_label, date.today())
-                    
+                    meta_in[field] = c.date_input(display_label, date.today(), key=f_key)
                 elif any(x in field for x in ["Total weight", "Distance", "Duration"]):
-                    # Floats for weights/miles
-                    meta_in[field] = c.number_input(display_label, min_value=0.0, step=0.1, value=0.0)
-                    
+                    meta_in[field] = c.number_input(display_label, min_value=0.0, step=0.1, value=None, placeholder="0.0", key=f_key)
                 elif "Participants" in field or "#" in field:
-                    # Integers for people
-                    meta_in[field] = c.number_input(display_label, min_value=0, step=1, value=0)
-                    
+                    meta_in[field] = c.number_input(display_label, min_value=0, step=1, value=None, placeholder="0", key=f_key)
                 else:
-                    meta_in[field] = c.text_input(display_label)
+                    meta_in[field] = c.text_input(display_label, key=f_key)
 
             st.markdown("---")
-            st.subheader("DEBRIS QUANTIFICATION")
+            
+            # 2. DEBRIS SECTION
+            st.subheader("2. DEBRIS QUANTIFICATION")
             counts = {}
             tabs = st.tabs([k.upper() for k in DEBRIS_GROUPS.keys()])
             for i, (group_name, items) in enumerate(DEBRIS_GROUPS.items()):
                 with tabs[i]:
                     d_cols = st.columns(3)
                     for j, item in enumerate(items):
-                        counts[item] = d_cols[j % 3].number_input(item, min_value=0, step=1)
+                        # Unique key for every debris item to ensure persistence
+                        counts[item] = d_cols[j % 3].number_input(item, min_value=0, step=1, value=None, placeholder="0", key=f"count_{item}")
 
-            if st.form_submit_button("COMMIT TO MASTER LOG"):
+            st.markdown("---")
+            
+            # 3. FINALIZATION SECTION
+            st.subheader("3. SUBMIT ENTRY")
+            st.info("**Done entering in your cleanup?**")
+            
+            submit_col1, submit_col2 = st.columns([1, 3])
+            submitted = submit_col1.form_submit_button("COMMIT TO MASTER LOG")
+
+            if submitted:
+                def safe_val(v): return v if v is not None else 0
+
+                # Validation Check
                 missing_fields = [r for r in REQUIRED_FIELDS if not meta_in.get(r)]
                 
                 if missing_fields:
-                    st.error(f"Missing required fields: {', '.join(missing_fields)}")
+                    # Because clear_on_submit is False, the data remains in the inputs above
+                    st.error(f"⚠️ **Missing required fields:** {', '.join(missing_fields)}")
                 else:
-                    # 2. PREPARE ROW & UNIFY DATE KEY
-                    new_row = {**meta_in, **counts}
+                    # Prepare and Clean Data
+                    cleaned_meta = {k: (v if v is not None else 0) for k, v in meta_in.items()}
+                    cleaned_counts = {k: safe_val(v) for k, v in counts.items()}
+                    
+                    new_row = {**cleaned_meta, **cleaned_counts}
                     new_row["Date"] = pd.to_datetime(meta_in["Date"])
                     
-                    # 3. AUTO-CALCULATE ALL TOTALS 
                     category_to_total_col = {
-                        "Plastic": "Total Plastic",
-                        "Foam": "Total Foam",
-                        "PPE": "Total PPE",
-                        "Metal": "Total Metal",
-                        "Glass & Rubber": "Total Glass & Rubber",
-                        "Paper & Cloth": "Total Paper & Cloth",
-                        "Fishing Debris": "Total Fishing Debris",
+                        "Plastic": "Total Plastic", "Foam": "Total Foam", "PPE": "Total PPE",
+                        "Metal": "Total Metal", "Glass & Rubber": "Total Glass & Rubber",
+                        "Paper & Cloth": "Total Paper & Cloth", "Fishing Debris": "Total Fishing Debris",
                         "Microplastics & Fibers": "Total Microplastics"
                     }
 
                     grand_total = 0
                     for group_name, total_col in category_to_total_col.items():
-                        group_sum = sum(counts.get(item, 0) for item in DEBRIS_GROUPS.get(group_name, []))
+                        group_sum = sum(cleaned_counts.get(item, 0) for item in DEBRIS_GROUPS.get(group_name, []))
                         new_row[total_col] = group_sum
                         grand_total += group_sum
                     
-                    grand_total += sum(counts.get(item, 0) for item in DEBRIS_GROUPS.get("Other", []))
+                    grand_total += sum(cleaned_counts.get(item, 0) for item in DEBRIS_GROUPS.get("Other", []))
                     new_row["Grand Total"] = grand_total
 
-                    # 4. LOAD, CONCAT, AND PROTECT COLUMNS
+                    # Save to Master CSV
                     current_df = load_and_sync_data()
-                    new_df = pd.DataFrame([new_row])
+                    updated_df = pd.concat([current_df, pd.DataFrame([new_row])], ignore_index=True)
                     
-                    updated_df = pd.concat([current_df, new_df], ignore_index=True)
-                    
-                    # FILTER: Only save columns that exist in your config
                     allowed = METADATA_FIELDS + ALL_DEBRIS_ITEMS + SUMMARY_TOTALS + ["Date"]
-                    final_cols = [c for c in updated_df.columns if c in allowed]
-                    # Remove exact duplicates in final_cols list while keeping order
-                    final_cols = list(dict.fromkeys(final_cols))
+                    final_cols = list(dict.fromkeys([c for c in updated_df.columns if c in allowed]))
                     
-                    updated_df = updated_df[final_cols]
-                    
-                    # 5. SAVE
-                    updated_df.to_csv(DB_FILE, index=False, encoding='utf-8-sig')
-                    st.cache_data.clear() # Refresh history immediately
-                    st.success(f"Entry Saved! Grand Total: {grand_total}")
+                    updated_df[final_cols].to_csv(DB_FILE, index=False, encoding='utf-8-sig')
+                    st.cache_data.clear()
+
+                    # MANUALLY CLEAR FORM DATA FROM SESSION STATE
+                    # We only do this on SUCCESS
+                    for key in list(st.session_state.keys()):
+                        if key.startswith("meta_") or key.startswith("count_"):
+                            del st.session_state[key]
+
+                    # Success Message
+                    success_area = st.empty()
+                    success_area.success(f"**Success!** Cleanup at **{meta_in['Location']}** has been logged. Navigate to the History section to view.")
                     st.balloons()
+                    
+                    import time
+                    time.sleep(5)
                     st.rerun()
             
 
-# --- SECTION 2: HISTORY ---
+    # --- SECTION 2: HISTORY ---
     elif page == "History":
         st.title("CLEANUP DATA ARCHIVE")
         hist_df = load_and_sync_data()
         
         if not hist_df.empty:
-            # 1. Clean up Date column before sorting
+            # 1. Statistical Outlier Calculation (Replicating your Excel Formula)
+            # Change this multiplier to match your $GJ$2 value (usually 2 or 3)
+            MULTIPLIER = 4.0 
+            
+            # Calculate stats for all debris items across the whole dataset
+            debris_stats = hist_df[ALL_DEBRIS_ITEMS].agg(['mean', 'std'])
+            
+            def check_outlier(row):
+                for item in ALL_DEBRIS_ITEMS:
+                    threshold = (MULTIPLIER * debris_stats.loc['std', item]) + debris_stats.loc['mean', item]
+                    if row[item] > threshold:
+                        return "O"
+                return ""
+
+            # Apply the logic to create the Outlier column
+            hist_df['Outlier'] = hist_df.apply(check_outlier, axis=1)
+
+            # 3. Clean up Date and Search
             hist_df['Date'] = pd.to_datetime(hist_df['Date'], errors='coerce')
             hist_df = hist_df.sort_values(by='Date', ascending=False)
 
-            # 2. Search Logic
             search_q = st.text_input("SEARCH BY LOCATION, CITY, OR NOTES", "").strip()
             if search_q:
                 mask = (
@@ -192,13 +250,13 @@ else:
                 )
                 hist_df = hist_df[mask]
 
-            # 3. Format Date for DISPLAY ONLY
+            # 4. Display Formatting
             display_df = hist_df.copy()
-            # This turns '2024-02-25 00:00:00' into '2024-02-25'
-            # If date is missing, it shows "Missing Date" instead of None
             display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d').fillna("Missing Date")
 
             st.markdown(f"**RECORD COUNT:** {len(display_df)}")
+            
+
             st.dataframe(display_df, use_container_width=True)
             
             # Download
@@ -208,7 +266,6 @@ else:
                 file_name="cleanup_archive.csv", 
                 mime="text/csv"
             )
-
 
 
 
@@ -223,94 +280,66 @@ else:
         f_df['Month'] = f_df['Date'].dt.month_name().fillna("Unknown")
 
         # --- STEP 0: TOP DATA CHARTS ---
-        with st.expander("CONFIGURE TOP DATA CHARTS", expanded=True):
-
-            t_col1, t_col2, t_col3 = st.columns([2, 2, 1])
-            
-            # DEFAULT: Total Pieces (Count)
-            sort_method = t_col1.radio(
-                "SELECT VIEW:", 
-                ["Total Pieces (Count)", "Frequency (%)"],
-                index=0,  # Sets 'Total Pieces' as default
-                help="Total Pieces: Sum of all items found. Frequency: % of cleanups where item was found."
-            )
-            
-            # DEFAULT: Toggle ON
-            group_sizes = t_col2.toggle("Group Sizes (Micro/Small/Large)", value=True)
-            num_bars = t_col3.number_input("Number of Bars:", min_value=3, max_value=25, value=10)
-
-            # 1. Prep Data
-            top_df_raw = df.copy()
-            total_cleanups = len(top_df_raw)
-            
-            # 2. Define sub-groups matching your Tier naming exactly
-            size_groups = {
-                "Grouped Microplastics": ["Micro plastic 0-5mm", "SMALL plastic 5-30mm", "LARGE plastic >30mm"],
-                "Grouped Microfoams": ["Micro foam 0-5mm", "SMALL foam 5-30mm", "LARGE foam >30mm"],
-                "Grouped Microfibers": ["Line/net fiber: MICRO 0-5mm", "Line/net fiber: SMALL 5-30mm", "Line/net fiber: LARGE >30mm"]
-            }
-
-            plot_items = ALL_DEBRIS_ITEMS.copy()
-
-            if group_sizes:
-                for group_name, items in size_groups.items():
-                    valid_items = [i for i in items if i in top_df_raw.columns]
-                    if valid_items:
-                        top_df_raw[group_name] = top_df_raw[valid_items].sum(axis=1)
-                        plot_items = [i for i in plot_items if i not in valid_items]
-                        plot_items.append(group_name)
-
-            # 3. Calculation Logic
-            if not top_df_raw.empty:
-                if "Frequency" in sort_method:
-                    counts = (top_df_raw[plot_items] > 0).sum().reset_index()
-                    counts.columns = ['Item', 'Cleanups_Found']
-                    counts['Value'] = (counts['Cleanups_Found'] / total_cleanups) * 100
-                    y_label = "PERCENT OF EXPEDITIONS (%)"
-                    suffix = "%"
-                    text_fmt = '.1f'
-                else:
-                    counts = top_df_raw[plot_items].sum().reset_index()
-                    counts.columns = ['Item', 'Value']
-                    counts['Cleanups_Found'] = (top_df_raw[plot_items] > 0).sum().values
-                    y_label = "TOTAL PIECES COLLECTED"
-                    suffix = " pieces"
-                    text_fmt = ','
-
-                # 4. Filter, Sort, and Build Chart
-                top_plot_df = counts.sort_values(by='Value', ascending=False).head(num_bars)
-
-                fig_top = px.bar(
-                    top_plot_df, x='Item', y='Value',
-                    template="simple_white",
-                    color_discrete_sequence=[ROZALIA_PALETTE[3]], 
-                    text_auto=text_fmt
-                )
-
-                fig_top.update_layout(
-                    title=f"Top {num_bars} Items Found: {sort_method}",
-                    xaxis_title=None,
-                    yaxis_title=y_label,
-                    font_family="Avenir",
-                    xaxis={'categoryorder':'total descending'}
-                )
-                st.plotly_chart(fig_top, use_container_width=True)
-
+        # (Keep your existing Top Data Charts code here...)
 
         # --- STEP 1: FILTER DATA ---
         st.markdown("### DATA CONTROLS")
-        filter_cols = ["Year", "Month", "State", "City", "Type of cleanup", "Type of location", "Weather", "Tide"]
+        st.markdown("**STEP 1: FILTER DATA**")
         
-        # Grid layout for filters
-        rows = [filter_cols[i:i + 4] for i in range(0, len(filter_cols), 4)]
-        for row in rows:
-            cols = st.columns(4)
-            for idx, col_name in enumerate(row):
-                if col_name in f_df.columns:
-                    options = sorted(f_df[col_name].unique().astype(str))
-                    selected = cols[idx].multiselect(f"SELECT {col_name.upper()}", options=options)
-                    if selected:
-                        f_df = f_df[f_df[col_name].astype(str).isin(selected)]
+        # We define the grid exactly like your original, but handle City/Location specially
+        r1_c1, r1_c2, r1_c3, r1_c4 = st.columns(4)
+        r2_c1, r2_c2, r2_c3, r2_c4 = st.columns(4)
+        
+        # ROW 1: Geography & Time
+        # State
+        state_opts = sorted(f_df["State"].unique().astype(str))
+        sel_states = r1_c1.multiselect("SELECT STATE", options=state_opts)
+        if sel_states:
+            f_df = f_df[f_df["State"].isin(sel_states)]
+
+        # City (The Parent)
+        city_opts = sorted(f_df["City"].unique().astype(str))
+        sel_cities = r1_c2.multiselect("SELECT CITY", options=city_opts)
+        if sel_cities:
+            f_df = f_df[f_df["City"].isin(sel_cities)]
+
+        # Location (The Child - filtered by City)
+        loc_opts = sorted(f_df["Location"].unique().astype(str))
+        sel_locs = r1_c3.multiselect("SELECT LOCATION", options=loc_opts)
+        if sel_locs:
+            f_df = f_df[f_df["Location"].isin(sel_locs)]
+
+        # Year
+        year_opts = sorted(f_df["Year"].unique())
+        sel_years = r1_c4.multiselect("SELECT YEAR", options=year_opts)
+        if sel_years:
+            f_df = f_df[f_df["Year"].isin(sel_years)]
+
+        # ROW 2: Cleanup Details & Weather
+        # Month
+        month_opts = sorted(f_df["Month"].unique())
+        sel_months = r2_c1.multiselect("SELECT MONTH", options=month_opts)
+        if sel_months:
+            f_df = f_df[f_df["Month"].isin(sel_months)]
+
+        # Type of cleanup
+        cleanup_opts = sorted(f_df["Type of cleanup"].unique().astype(str))
+        sel_cleanup = r2_c2.multiselect("SELECT TYPE OF CLEANUP", options=cleanup_opts)
+        if sel_cleanup:
+            f_df = f_df[f_df["Type of cleanup"].isin(sel_cleanup)]
+
+        # Type of location
+        type_loc_opts = sorted(f_df["Type of location"].unique().astype(str))
+        sel_type_loc = r2_c3.multiselect("SELECT TYPE OF LOCATION", options=type_loc_opts)
+        if sel_type_loc:
+            f_df = f_df[f_df["Type of location"].isin(sel_type_loc)]
+
+        # Weather
+        weather_opts = sorted(f_df["Weather"].unique().astype(str))
+        sel_weather = r2_c4.multiselect("SELECT WEATHER", options=weather_opts)
+        if sel_weather:
+            f_df = f_df[f_df["Weather"].isin(sel_weather)]
+
 
         # --- STEP 2: VIEW DIMENSIONS ---
         st.markdown("**STEP 2: GROUP DATA BY**")
@@ -326,7 +355,7 @@ else:
             # Metrics
             total_pieces = int(f_df[ALL_DEBRIS_ITEMS].sum().sum())
             m1, m2, m3 = st.columns(3)
-            m1.metric("EXPEDITIONS", f"{len(f_df):,}")
+            m1.metric("CLEANUPS", f"{len(f_df):,}")
             m2.metric("TOTAL PIECES", f"{total_pieces:,}")
             m3.metric("AVG PIECES", f"{int(total_pieces / len(f_df)) if len(f_df) > 0 else 0:,}")
 
