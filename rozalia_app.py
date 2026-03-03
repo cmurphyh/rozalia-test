@@ -214,8 +214,6 @@ else:
                     success_area.success(f"**Success!** Cleanup at **{meta_in['Location']}** has been logged. Navigate to the History section to view.")
                     st.balloons()
                     
-                    import time
-                    time.sleep(3)
                     st.rerun()
             
 
