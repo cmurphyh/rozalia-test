@@ -215,7 +215,7 @@ else:
                     st.balloons()
                     
                     import time
-                    time.sleep(5)
+                    time.sleep(3)
                     st.rerun()
             
 
@@ -225,6 +225,8 @@ else:
         hist_df = load_and_sync_data()
         
         if not hist_df.empty:
+            if "State" in hist_df.columns:
+                hist_df["State"] = hist_df["State"].astype(str).str.upper()
             # 1. Statistical Outlier Calculation (Replicating your Excel Formula)
             # Change this multiplier to match your $GJ$2 value (usually 2 or 3)
             MULTIPLIER = 4.0 
@@ -283,6 +285,8 @@ else:
 
         # 1. Efficient Data Preparation
         f_df = df.copy()
+        if "State" in f_df.columns:
+            f_df["State"] = f_df["State"].astype(str).str.upper()
         f_df['Date'] = pd.to_datetime(f_df['Date'], errors='coerce')
         f_df['Year'] = f_df['Date'].dt.year.fillna("Unknown").astype(str)
         f_df['Month'] = f_df['Date'].dt.month_name().fillna("Unknown")
