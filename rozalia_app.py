@@ -30,9 +30,9 @@ def load_and_sync_data():
     for col in METADATA_FIELDS:
         if col not in df.columns:
             if any(unit in col.lower() for unit in ['lb', 'miles', 'hrs', '#', 'knots']):
-                df[col] = 0
+                df[col] = "None"
             else:
-                df[col] = "Unknown"
+                df[col] = "None"
 
     # 4. Ensure all debris count columns exist (default fill to 0)
     for col in ALL_DEBRIS_ITEMS:
@@ -53,9 +53,9 @@ def load_and_sync_data():
     existing_meta = [c for c in METADATA_FIELDS if c in df.columns] 
     existing_debris = [c for c in ALL_DEBRIS_ITEMS if c in df.columns]   
     existing_totals = [c for c in SUMMARY_TOTALS if c in df.columns]
-    remaining = [c for c in df.columns if c not in existing_meta + existing_debris + existing_totals]
+    # remaining = [c for c in df.columns if c not in existing_meta + existing_debris + existing_totals]
 
-    new_column_order = existing_meta + existing_debris + existing_totals + remaining
+    new_column_order = existing_meta + existing_debris + existing_totals
     df = df[new_column_order]
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     return df
@@ -116,6 +116,7 @@ else:
 
             for i, field in enumerate(METADATA_FIELDS):
                 if field == "Outlier": continue
+
                 c = m_cols[i % 3]
                 display_label = field.upper().replace("#", "NUMBER")
                 if field in REQUIRED_FIELDS:
@@ -161,22 +162,35 @@ else:
 
 
             if submitted:
-                def safe_val(v): return v if v is not None else 0
-
-                # Validation Check
+                # 1. Validation Check
                 missing_fields = [r for r in REQUIRED_FIELDS if not meta_in.get(r)]
                 
                 if missing_fields:
-                    # Because clear_on_submit is False, the data remains in the inputs above
                     st.error(f"⚠️ **Missing required fields:** {', '.join(missing_fields)}")
                 else:
-                    # Prepare and Clean Data
-                    cleaned_meta = {k: (v if v is not None else 0) for k, v in meta_in.items()}
-                    cleaned_counts = {k: safe_val(v) for k, v in counts.items()}
+                    # 2. PREPARE METADATA WITH YOUR SPECIFIC DEFAULTS
+                    # Define which fields get what default
+                    to_unknown = ["Type of cleanup", "Type of location", "Weather", "Recent weather", "Tide", "Flow", "Recent events"]
+                    to_none = ["Unusual items", "Notes/Comments", "Start time", "End time"]
+                    to_zero = ["Total weight (lb)", "Distance cleaned (miles)", "Duration (hrs)", "# of participants", "Participants"]
+
+                    cleaned_meta = {}
+                    for field, val in meta_in.items():
+                        if val is not None and str(val).strip() != "":
+                            cleaned_meta[field] = val
+                        #EDIT HERE if you dont want empty metadata fields to default to none 
+                        else:
+                            cleaned_meta[field] = "None"
+
+                    # 3. PREPARE DEBRIS COUNTS (Fixes the NoneType error!)
+                    # This ensures every item is at least 0 so the sum() function doesn't break
+                    cleaned_counts = {k: (v if v is not None else 0) for k, v in counts.items()}
                     
+                    # 4. MERGE INTO NEW ROW
                     new_row = {**cleaned_meta, **cleaned_counts}
                     new_row["Date"] = pd.to_datetime(meta_in["Date"])
                     
+                    # 5. CALCULATE TOTALS
                     category_to_total_col = {
                         "Plastic": "Total Plastic", "Foam": "Total Foam", "PPE": "Total PPE",
                         "Metal": "Total Metal", "Glass & Rubber": "Total Glass & Rubber",
@@ -186,17 +200,22 @@ else:
 
                     grand_total = 0
                     for group_name, total_col in category_to_total_col.items():
+                        # We use cleaned_counts here because everything is guaranteed to be a number
                         group_sum = sum(cleaned_counts.get(item, 0) for item in DEBRIS_GROUPS.get(group_name, []))
                         new_row[total_col] = group_sum
                         grand_total += group_sum
                     
-                    grand_total += sum(cleaned_counts.get(item, 0) for item in DEBRIS_GROUPS.get("Other", []))
+                    # Add 'Other' category and Grand Total
+                    other_sum = sum(cleaned_counts.get(item, 0) for item in DEBRIS_GROUPS.get("Other", []))
+                    grand_total += other_sum
                     new_row["Grand Total"] = grand_total
 
                     # Save to Master CSV
                     current_df = load_and_sync_data()
-                    updated_df = pd.concat([current_df, pd.DataFrame([new_row])], ignore_index=True)
-                    
+                    new_df = pd.DataFrame([new_row])
+
+                    updated_df = pd.concat([current_df, new_df], ignore_index=True)
+
                     allowed = METADATA_FIELDS + ALL_DEBRIS_ITEMS + SUMMARY_TOTALS + ["Date"]
                     final_cols = list(dict.fromkeys([c for c in updated_df.columns if c in allowed]))
                     
@@ -213,6 +232,9 @@ else:
                     success_area = st.empty()
                     success_area.success(f"**Success!** Cleanup at **{meta_in['Location']}** has been logged. Navigate to the History section to view.")
                     st.balloons()
+
+                    import time
+                    time.sleep(5)
                     
                     st.rerun()
             
