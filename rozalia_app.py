@@ -156,6 +156,9 @@ else:
             submit_col1, submit_col2 = st.columns([1, 3])
             submitted = submit_col1.form_submit_button("COMMIT TO MASTER LOG")
 
+            st.markdown("*Navigate to History to view data*")
+
+
             if submitted:
                 def safe_val(v): return v if v is not None else 0
 
@@ -242,7 +245,7 @@ else:
             hist_df['Date'] = pd.to_datetime(hist_df['Date'], errors='coerce')
             hist_df = hist_df.sort_values(by='Date', ascending=False)
 
-            search_q = st.text_input("SEARCH BY LOCATION, CITY, OR NOTES", "").strip()
+            search_q = st.text_input("SEARCH BY LOCATION OR CITY", "").strip()
             if search_q:
                 mask = (
                     hist_df['Location'].astype(str).str.contains(search_q, case=False, na=False) | 
@@ -255,6 +258,7 @@ else:
             display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d').fillna("Missing Date")
 
             st.markdown(f"**RECORD COUNT:** {len(display_df)}")
+            st.markdown("*Click on any column header to sort the dataset.*")
             
 
             st.dataframe(display_df, use_container_width=True)
@@ -266,6 +270,9 @@ else:
                 file_name="cleanup_archive.csv", 
                 mime="text/csv"
             )
+
+            st.markdown("*Navigate to Dashboard to filter and visualize data*")
+
 
 
 
@@ -363,40 +370,57 @@ else:
 
             with tab_main:
                 st.subheader("MATERIAL TYPE")
+                
+                # 1. Prepare Data
                 cat_data = []
                 for cat, items in DEBRIS_GROUPS.items():
-                    cat_sum = f_df.groupby('X_Axis')[items].sum().sum(axis=1).reset_index(name='Count')
-                    cat_sum['Material'] = cat
-                    cat_data.append(cat_sum)
+                    valid_items = [i for i in items if i in f_df.columns]
+                    if valid_items:
+                        cat_sum = f_df.groupby('X_Axis')[valid_items].sum().sum(axis=1).reset_index(name='Count')
+                        cat_sum['Material'] = cat
+                        cat_data.append(cat_sum)
                 
                 plot_df = pd.concat(cat_data)
 
-                fig_stack = px.bar(
-                    plot_df, x='X_Axis', y='Count', color='Material',
-                    template="simple_white",
-                    color_discrete_sequence=ROZALIA_PALETTE,
-                    barmode='stack',
-                    category_orders={"X_Axis": sorted(plot_df['X_Axis'].unique())}
-                )
-                
-                # REVERTED: Using your specific hovertemplate logic
-                fig_stack.update_traces(
-                    hovertemplate="<b>%{fullData.name}</b><br>Total: %{customdata[0]:,} pieces<br>Share: %{y:.1f}%<extra></extra>",
-                    customdata=plot_df[['Count']]
-                )
+                # 2. Toggle View
+                main_chart_type = st.radio("VIEW TOTALS AS:", ["Stacked Bar", "Pie Chart"], horizontal=True, key="main_toggle")
 
-                fig_stack.update_layout(
-                    barnorm='percent', 
-                    yaxis_title="PROPORTION (%)", 
-                    xaxis_title=None,
-                    font_family="Avenir"
-                )
+                if main_chart_type == "Pie Chart":
+                    # Sum up counts and FILTER OUT ZEROS
+                    pie_df = plot_df.groupby('Material')['Count'].sum().reset_index()
+                    pie_df = pie_df[pie_df['Count'] > 0] 
+                    
+                    fig_stack = px.pie(
+                        pie_df, values='Count', names='Material',
+                        hole=0.4,
+                        template="simple_white",
+                        color_discrete_sequence=ROZALIA_PALETTE
+                    )
+                    fig_stack.update_traces(
+                        hovertemplate="<b>%{label}</b><br>Total: %{value:,}<extra></extra>"
+                    )
+                else:
+                    # Your original Stacked Bar logic
+                    fig_stack = px.bar(
+                        plot_df, x='X_Axis', y='Count', color='Material',
+                        template="simple_white",
+                        color_discrete_sequence=ROZALIA_PALETTE,
+                        barmode='stack',
+                        category_orders={"X_Axis": sorted(plot_df['X_Axis'].unique())},
+                        custom_data=[plot_df['Count']]
+                    )
+                    fig_stack.update_traces(
+                        hovertemplate="<b>%{fullData.name}</b><br>Total: %{customdata[0]:,} pieces<br>Share: %{y:.1f}%<extra></extra>"
+                    )
+                    fig_stack.update_layout(barnorm='percent', yaxis_title="PROPORTION (%)")
+
+                fig_stack.update_layout(xaxis_title=None, font_family="Avenir")
                 st.plotly_chart(fig_stack, use_container_width=True)
 
             with tab_sub:
                 st.subheader("SUBCATEGORY BREAKDOWNS")
                 target_cat = st.selectbox("CHOOSE A SUBCATEGORY:", options=list(DEBRIS_GROUPS.keys()))
-                sub_items = DEBRIS_GROUPS[target_cat]
+                sub_items = [i for i in DEBRIS_GROUPS[target_cat] if i in f_df.columns]
                 
                 # Filter out items with 0 counts to keep the chart clean
                 item_counts = f_df[sub_items].sum()
@@ -407,14 +431,29 @@ else:
                 else:
                     sub_df = f_df.melt(id_vars=['X_Axis'], value_vars=active_items, var_name='Item', value_name='Count')
                     sub_df = sub_df.groupby(['X_Axis', 'Item'])['Count'].sum().reset_index()
+                    
+                    # Calculate the total for JUST this subcategory
+                    sub_total = sub_df['Count'].sum()
 
-                    chart_type = st.radio("VIEW AS:", ["Stacked Bar", "Pie Chart"], horizontal=True)
+                    # Show the total piece count for this category selection
+                    st.markdown(f"**Total {target_cat} pieces found: {int(sub_total):,}**")
+
+                    chart_type = st.radio("VIEW AS:", ["Stacked Bar", "Pie Chart"], horizontal=True, key="sub_toggle")
 
                     if chart_type == "Pie Chart":
-                        fig_sub = px.pie(sub_df, values='Count', names='Item', hole=0.4,
+                        # Group by Item for a clean category-wide Pie
+                        pie_sub_df = sub_df.groupby('Item')['Count'].sum().reset_index()
+                        
+                        fig_sub = px.pie(pie_sub_df, values='Count', names='Item', hole=0.4,
                                          color_discrete_sequence=ROZALIA_PALETTE)
+                        
+                        # Add the sub-total to the center of the Donut
+                        fig_sub.update_layout(
+                            annotations=[dict(text=f'{int(sub_total):,}<br>total', x=0.5, y=0.5, font_size=20, showarrow=False)]
+                        )
+                        
                         fig_sub.update_traces(
-                            hovertemplate="<b>%{label}</b><br>Total: %{value:,} pieces<extra></extra>"
+                            hovertemplate="<b>%{label}</b><br>Count: %{value:,} pieces<br>%{percent}<extra></extra>"
                         )
                     else:
                         fig_sub = px.bar(sub_df, x='X_Axis', y='Count', color='Item',
@@ -422,12 +461,9 @@ else:
                                          category_orders={"X_Axis": sorted(sub_df['X_Axis'].unique())})
                         fig_sub.update_layout(barnorm='percent', yaxis_title="PROPORTION (%)")
                         fig_sub.update_traces(
-                            hovertemplate="<b>%{fullData.name}</b><br>Total: %{customdata[0]:,} pieces<br>Share: %{y:.1f}%<extra></extra>",
+                            hovertemplate="<b>%{fullData.name}</b><br>Count: %{customdata[0]:,} pieces<br>Share: %{y:.1f}%<extra></extra>",
                             customdata=sub_df[['Count']] 
                         )
-                    
-
-            
                     
                     fig_sub.update_layout(xaxis_title=None, font_family="Avenir")
                     st.plotly_chart(fig_sub, use_container_width=True)
