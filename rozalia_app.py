@@ -112,7 +112,7 @@ else:
             st.subheader("1. CLEANUP DETAILS")
             meta_in = {}
             m_cols = st.columns(3)
-            REQUIRED_FIELDS = ["Date", "Location", "City", "State"]
+            REQUIRED_FIELDS = ["Date", "Location", "City", "State", "Country"]
 
             for i, field in enumerate(METADATA_FIELDS):
                 if field == "Outlier": continue
@@ -172,7 +172,7 @@ else:
                     # Define which fields get what default
                     to_unknown = ["Type of cleanup", "Type of location", "Weather", "Recent weather", "Tide", "Flow", "Recent events"]
                     to_none = ["Unusual items", "Notes/Comments", "Start time", "End time"]
-                    to_zero = ["Total weight (lb)", "Distance cleaned (miles)", "Duration (hrs)", "# of participants", "Participants"]
+                    to_nodata = ["Total weight", "Distance cleaned", "Duration (hrs)", "# of participants", "Participants"]
 
                     cleaned_meta = {}
                     for field, val in meta_in.items():
