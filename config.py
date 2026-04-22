@@ -3,13 +3,13 @@
 # When new categories are added in Excel, just add the header name to the list below.
 
 METADATA_FIELDS = [
-    "Date", "Location", "City", "State", 
+    "Date", "Location", "City", "State", "Country",
     "Organization",
-    "Type of cleanup", "Type of location", 
-    "Distance cleaned (miles)", "Duration (hrs)", 
+    "Type of cleanup", "Specify Other (Type of cleanup)", "Type of location", 
+    "Distance cleaned", "Units (Distance cleaned)", "Duration (hrs)", 
     "Start time", "End time", "Weather", 
     "Wind", "Recent weather", 
-    "Tide", "Flow", "Recent events", "Total weight (lb)",
+    "Tide/Water Level", "Flow Conditions", "Other (Tide/Water Level/Flow Conditions)", "Recent events", "Total weight", "Units (Total weight)",
     "# of participants", "Unusual items", "Notes/comments"
 ]
 
@@ -68,14 +68,14 @@ SUMMARY_TOTALS = [
 
 
 DROPDOWN_OPTIONS = {
-    "State": ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "Can", "Other"],
+    "State": ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "Other"],
     "Type of cleanup": ["Shoreline (hands)", "Surface (hands)", "Underwater (hands)", "Dip net", "Neuston net", "ROV", "Sediment container", "Sediment grab", "Other"],
     "Type of location": ["Sandy Beach", "Rocky Beach", "Private Dock", "Marina", "Park", "Open Water", "River", "Other"],
     "Weather": ["Clear/Sunny", "Rain", "Cloudy", "Windy", "Foggy", "Other"],
     "Wind" : ["Calm (<1 knots / < 1 mph)", "Light Air (1-3 knots / 1-3 mph)", "Light Breeze (4-6 knots / 4-7 mph)", "Gentle Breeze (7-10 knots / 8-12 mph)", "Moderate Breeze (11-16 knots / 13-18 mph)", "Fresh Breeze (17-21 knots / 19-24 mph)", "Strong Breeze (22-27 knots / 25-31 mph)", "Near Gale (28-33 knots / 32-38 mph)", "Gale (34-40 knots / 39-46 mph)", "Strong Gale (41-47 knots / < 47-54 mph)", "Storm (48-55 knots / 55-63 mph)", "Violent Storm (56-63 knots / 64-72 mph)","Hurricane (> 64 knots / >73 mph)"],
     "Recent weather": ["Wind Event", "Rain Event", "Storm Event", "Draught", "None", "Irene", "Other"],
-    "Tide": ["High", "Low", "Mid", "Other", "N/A"],
-    "Flow": ["Ebbing", "Flooding", "Slack", "Other", "N/A"],
+    "Tide/Water Level": ["High", "Low", "Mid", "Extreme Low", "Extreme High", "Other", "N/A"],
+    "Flow Conditions": ["Ebbing (Tidal)", "Flooding (Tidal)", "Slack (Tidal)", "Flat (Lacustrine)", "Waves (Lacustrine)", "Choppy (Lacustrine)", "White-caps (Lacustrine)", "Stormflow (Riverine)", "Low flow (Riverine)", "Dry bed (Riverine)" ,"Other", "N/A"],
     "Recent events": ["Festival", "Holiday", "Concert", "Busy Weekend", "Summer Camp", "None", "Flood", "Storm", "Hurricane", "Other"],
     "Start time": [
         "12:00 AM", "12:30 AM", "1:00 AM", "1:30 AM", "2:00 AM", "2:30 AM", "3:00 AM", "3:30 AM", "4:00 AM", "4:30 AM", "5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM", "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
