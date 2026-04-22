@@ -170,7 +170,7 @@ else:
                 else:
                     # 2. PREPARE METADATA WITH YOUR SPECIFIC DEFAULTS
                     # Define which fields get what default
-                    to_unknown = ["Type of cleanup", "Type of location", "Weather", "Recent weather", "Tide", "Flow", "Recent events"]
+                    to_unknown = ["Type of cleanup", "Type of location", "Weather", "Recent weather", "Tide/Water Level", "Flow Conditions", "Recent events"]
                     to_none = ["Unusual items", "Notes/Comments", "Start time", "End time"]
                     to_nodata = ["Total weight", "Distance cleaned", "Duration (hrs)", "# of participants", "Participants"]
 
