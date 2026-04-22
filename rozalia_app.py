@@ -20,8 +20,9 @@ def load_and_sync_data():
     if not os.path.exists(DB_FILE):
         return pd.DataFrame()
     
-    df = pd.read_csv(DB_FILE, low_memory=False)
-    
+   # df = pd.read_csv(DB_FILE, low_memory=False)
+   df = pd.read_csv(DB_FILE, low_memory=False, encoding='latin-1') 
+
     # 2. Drop unwanted columns
     cols_to_drop = ['Year', 'Month', 'Day']
     df.drop(columns=[c for c in cols_to_drop if c in df.columns], inplace=True)
