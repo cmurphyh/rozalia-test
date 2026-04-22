@@ -23,8 +23,8 @@ def run_migration():
 
     # 3. METADATA LOGIC
     categorical_cols = [
-        'Location', 'City', 'State', 'Type of cleanup', 'Type of location', 
-        'Weather', 'Weather (wind knots)', 'Recent weather', 'Tide', 'Flow', 
+        'Location', 'Organization', 'City', 'State', 'Country', 'Type of cleanup', 'Specify Other (Type of cleanup)', 'Type of location', 
+        'Weather', 'Weather', 'Recent weather', 'Tide/Water Level', 'Flow Conditions', 
         'Recent events', 'Unusual items', 'Notes/comments'
     ]
     
@@ -38,9 +38,9 @@ def run_migration():
     # 4. NUMERIC LOGIC 
 
     numeric_cols = [
-        'Distance cleaned (miles)', 
+        'Distance cleaned', 
         'Duration (hrs)', 
-        'Total weight (lb)', 
+        'Total weight', 
         '# of participants', 
     ]
     
