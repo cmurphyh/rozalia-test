@@ -147,7 +147,7 @@ else:
                     d_cols = st.columns(3)
                     for j, item in enumerate(items):
                         # Unique key for every debris item to ensure persistence
-                        counts[item] = d_cols[j % 3].number_input(item, min_value=0, step=1, value=None, placeholder="0", key=f"count_{item}")
+                        counts[item] = d_cols[j % 3].number_input(item, min_value=0, step=1, value=0, key=f"count_{item}")
 
             st.markdown("---")
             
