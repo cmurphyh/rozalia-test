@@ -111,30 +111,30 @@ else:
             # 1. METADATA SECTION
             st.subheader("1. CLEANUP DETAILS")
             meta_in = {}
-            m_cols = st.columns(3)
             REQUIRED_FIELDS = ["Date", "Location", "City", "State", "Country"]
 
-            for i, field in enumerate(METADATA_FIELDS):
-                if field == "Outlier": continue
+            fields_to_show = [f for f in METADATA_FIELDS if f != "Outlier"]
+            for i in range(0, len(fields_to_show), 3):
+                row_cols = st.columns(3)
+                for j, field in enumerate(fields_to_show[i:i+3]):
+                    c = row_cols[j]
+                    display_label = field.upper().replace("#", "NUMBER")
+                    if field in REQUIRED_FIELDS:
+                        display_label = f"{display_label} :red[*]"
 
-                c = m_cols[i % 3]
-                display_label = field.upper().replace("#", "NUMBER")
-                if field in REQUIRED_FIELDS:
-                    display_label = f"{display_label} :red[*]"
+                    # Logic: We use 'key' to tie these to session state so they persist
+                    f_key = f"meta_{field}"
 
-                # Logic: We use 'key' to tie these to session state so they persist
-                f_key = f"meta_{field}"
-
-                if field in DROPDOWN_OPTIONS:
-                    meta_in[field] = c.selectbox(display_label, options=DROPDOWN_OPTIONS[field], index=None, key=f_key)
-                elif "Date" in field:
-                    meta_in[field] = c.date_input(display_label, date.today(), key=f_key)
-                elif field in ["Total weight", "Distance", "Duration"]:
-                    meta_in[field] = c.number_input(display_label, min_value=0.0, step=0.1, value=0.0, key=f_key)
-                elif "Participants" in field or "#" in field:
-                    meta_in[field] = c.number_input(display_label, min_value=0, step=1, value=0, key=f_key)
-                else:
-                    meta_in[field] = c.text_input(display_label, key=f_key)
+                    if field in DROPDOWN_OPTIONS:
+                        meta_in[field] = c.selectbox(display_label, options=DROPDOWN_OPTIONS[field], index=None, key=f_key)
+                    elif "Date" in field:
+                        meta_in[field] = c.date_input(display_label, date.today(), key=f_key)
+                    elif field in ["Total weight", "Distance cleaned", "Duration (hrs)"]:
+                        meta_in[field] = c.number_input(display_label, min_value=0.0, step=0.1, value=0.0, key=f_key)
+                    elif "Participants" in field or "#" in field:
+                        meta_in[field] = c.number_input(display_label, min_value=0, step=1, value=0, key=f_key)
+                    else:
+                        meta_in[field] = c.text_input(display_label, key=f_key)
 
             st.markdown("---")
             
