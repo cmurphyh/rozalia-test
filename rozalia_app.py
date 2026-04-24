@@ -170,7 +170,7 @@ else:
                 else:
                     # 2. PREPARE METADATA WITH YOUR SPECIFIC DEFAULTS
                     # Define which fields get what default
-                    to_unknown = ["Type of cleanup", "Type of location", "Weather", "Recent weather", "Tide/Water Level", "Flow Conditions", "Recent events"]
+                    to_unknown = ["Type of cleanup", "Type of location", "Current Weather", "Recent weather", "Tide/Water Level", "Flow Conditions", "Recent events"]
                     to_none = ["Unusual items", "Notes/Comments", "Start time", "End time"]
                     to_nodata = ["Total weight", "Distance cleaned", "Duration (hrs)", "# of participants", "Participants"]
 
@@ -367,10 +367,10 @@ else:
             f_df = f_df[f_df["Type of location"].isin(sel_type_loc)]
 
         # Weather
-        weather_opts = sorted(f_df["Weather"].unique().astype(str))
+        weather_opts = sorted(f_df["Current Weather"].unique().astype(str))
         sel_weather = r2_c4.multiselect("SELECT WEATHER", options=weather_opts)
         if sel_weather:
-            f_df = f_df[f_df["Weather"].isin(sel_weather)]
+            f_df = f_df[f_df["Current Weather"].isin(sel_weather)]
 
 
         # --- STEP 2: VIEW DIMENSIONS ---

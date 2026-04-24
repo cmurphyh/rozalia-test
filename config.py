@@ -6,7 +6,7 @@ METADATA_FIELDS = [
     "Date", "Location",  "Organization/Individual", "City", "State", "Country",
     "Type of cleanup", "Specify Other (Type of cleanup)", "Type of location", 
     "Distance cleaned", "Units (Distance cleaned)", "Duration (hrs)", 
-    "Start time", "End time", "Weather", 
+    "Start time", "End time", "Current Weather", 
     "Wind", "Recent weather", 
     "Tide/Water Level", "Flow Conditions", "Other (Tide/Water Level/Flow Conditions)", "Recent events", "Total weight", "Units (Total weight)",
     "# of participants", "Unusual items", "Notes/comments"
